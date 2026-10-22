@@ -41,7 +41,7 @@ Examples:
 - `NODE_ENV=development` -> `.env.development`
 - `NODE_ENV=production` -> `.env.production`
 
-If `NODE_ENV` is not set, it defaults to `local`.
+If `NODE_ENV` is not set or empty, it loads `.env` directly.
 
 When reading a value, `process.env` takes precedence over the value from the `.env.<NODE_ENV>` file.
 
@@ -152,7 +152,7 @@ Ensures the value matches one of the provided enum values.
 
 ### `Env()`
 
-Stores the resolved environment name from `NODE_ENV` or `local`.
+Stores the resolved environment name from `NODE_ENV` (or `undefined` if not set).
 
 ## Options
 

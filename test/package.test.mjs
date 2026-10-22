@@ -98,6 +98,39 @@ test( 'loadConfigInstance reads env values, defaults, transforms, and NODE_ENV',
   assert.equal( config.env, 'production' )
 } )
 
+test( 'loadConfigInstance loads .env when NODE_ENV is unset or empty', () => {
+  class FallbackConfig {}
+
+  applyDecorator( StringValue( 'APP_NAME' ), FallbackConfig, 'appName' )
+  applyDecorator( Env(), FallbackConfig, 'env' )
+
+  // 1) when NODE_ENV is unset (undefined)
+  const configWhenUnset = withTempProject(
+    '.env',
+    'APP_NAME=default-env-app\n',
+    () => {
+      delete process.env.NODE_ENV
+      return loadConfigInstance( FallbackConfig, new FallbackConfig() )
+    },
+  )
+
+  assert.equal( configWhenUnset.appName, 'default-env-app' )
+  assert.equal( configWhenUnset.env, undefined )
+
+  // 2) when NODE_ENV is empty string or whitespace
+  const configWhenEmpty = withTempProject(
+    '.env',
+    'APP_NAME=empty-env-app\n',
+    () => {
+      process.env.NODE_ENV = '   '
+      return loadConfigInstance( FallbackConfig, new FallbackConfig() )
+    },
+  )
+
+  assert.equal( configWhenEmpty.appName, 'empty-env-app' )
+  assert.equal( configWhenEmpty.env, undefined )
+} )
+
 test( 'createConfigProvider returns a provider that loads a config instance', () => {
   class ProviderConfig {}
 
@@ -111,7 +144,7 @@ test( 'createConfigProvider returns a provider that loads a config instance', ()
       'PORT=4100',
     ].join( '\n' ),
     () => {
-      delete process.env.NODE_ENV
+      process.env.NODE_ENV = 'local'
       const createdProvider = createConfigProvider( ProviderConfig )
 
       assert.equal( createdProvider.provide, ProviderConfig )
@@ -128,7 +161,7 @@ test( 'createConfigProvider returns a provider that loads a config instance', ()
       'PORT=4100',
     ].join( '\n' ),
     () => {
-      delete process.env.NODE_ENV
+      process.env.NODE_ENV = 'local'
       return provider.useFactory()
     },
   )
@@ -150,7 +183,7 @@ test( 'Configurable loads values during class instantiation', () => {
   const ConfigurableClass = Configurable()( BaseConfig )
 
   const instance = withTempProject(
-    '.env.local',
+    '.env',
     'APP_NAME=configurable-app\n',
     () => {
       delete process.env.NODE_ENV
@@ -160,7 +193,7 @@ test( 'Configurable loads values during class instantiation', () => {
 
   assert.equal( instance.created, true )
   assert.equal( instance.appName, 'configurable-app' )
-  assert.equal( instance.env, 'local' )
+  assert.equal( instance.env, undefined )
 } )
 
 test( 'loadConfigInstance throws useful errors for invalid or missing values', () => {
@@ -171,7 +204,7 @@ test( 'loadConfigInstance throws useful errors for invalid or missing values', (
   applyDecorator( StringValue( 'APP_NAME' ), MissingConfig, 'appName' )
 
   withTempProject(
-    '.env.local',
+    '.env',
     'ENABLE_DOCS=maybe\n',
     () => {
       delete process.env.NODE_ENV
@@ -184,7 +217,7 @@ test( 'loadConfigInstance throws useful errors for invalid or missing values', (
   )
 
   withTempProject(
-    '.env.local',
+    '.env',
     '',
     () => {
       delete process.env.NODE_ENV

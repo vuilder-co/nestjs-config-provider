@@ -39,8 +39,9 @@ function readEnv(envValues, context, required, defaultValue) {
     return value;
 }
 function loadEnvFile(className) {
-    const env = (process.env.NODE_ENV ?? 'local').toLowerCase();
-    const envFileName = `.env.${env}`;
+    const rawEnv = process.env.NODE_ENV?.trim();
+    const env = rawEnv ? rawEnv.toLowerCase() : undefined;
+    const envFileName = env ? `.env.${env}` : '.env';
     const envFilePath = findEnvFile(envFileName);
     if (!envFilePath) {
         throw new Error(`Failed to load "${className}": environment file "${envFileName}" was not found from "${process.cwd()}" upward.`);
@@ -142,7 +143,7 @@ function loadConfigInstance(configClass, instance) {
         }
         return [property.propertyKey, applyTransform(rawValue, context, property.transform)];
     }));
-    console.log(`env ${env} loaded from ${envFilePath}`);
+    console.log(env ? `env ${env} loaded from ${envFilePath}` : `env loaded from ${envFilePath}`);
     return Object.assign(instance, values);
 }
 function createConfigProvider(configClass) {
